@@ -1,0 +1,59 @@
+Böp! – eigene Bilder und Töne
+==============================
+
+1. Bilder nach   Assets\Pictures\   legen, Töne nach   Assets\Sound\
+2. Doppelklick auf   assets-aktualisieren.bat   (im Spielordner)
+   → zeigt, welches Bild wofür erkannt wurde und was nicht zugeordnet werden konnte
+3. index.html neu laden – fertig.
+
+Wichtig: Den Ordner "Assets" nicht umbenennen (auch nicht in Kleinbuchstaben),
+sonst findet die Online-Version Bilder und Töne nicht mehr.
+
+
+BILDER FÜR SPIELSITUATIONEN
+---------------------------
+Erkannt wird an diesen Wortbestandteilen (der Rest des Namens ist frei):
+
+  Jemandhatboeb…      zittert bei dem Spieler, der nur noch eine Karte hat ("Böp!")
+  einekarteleft…      poppt auf, wenn jemand mit nur einer Karte doch ziehen muss
+  …verlierer…         am Rundenende, bei allen außer dem Gewinner
+
+
+BILDER FÜR KARTEN  (jpg, png, webp, gif, svg)
+---------------------------------------------
+Das Bild sitzt in der Kartenmitte; Farbe und Zahl/Symbol bleiben oben sichtbar.
+Bei Aussetzen, Richtungswechsel, +2 und +4 poppt das Bild beim Legen zusätzlich kurz groß auf.
+Alles nach einem Unterstrich ist frei wählbar (z. B. Plus2_ziehen.jpg).
+
+  Genau eine Karte:        koralle-7.jpg      bernstein-plus2.jpg     flieder-aussetzen.jpg
+  Ein Wert, alle Farben:   7.jpg     plus2.jpg     aussetzen.jpg     richtungswechsel.jpg
+  Eine ganze Farbe:        koralle.jpg    bernstein.jpg    petrol.jpg    flieder.jpg
+  Joker:                   joker.jpg      plus4.jpg
+  Alle übrigen:            alle.jpg
+  Kartenrückseite:         rueckseite.jpg     (füllt die ganze Rückseite)
+
+  Farben:  koralle   bernstein   petrol   flieder
+  Werte:   0 1 2 3 4 5 6 7 8 9   aussetzen   richtungswechsel   plus2
+
+Das genaueste Bild gewinnt: koralle-7 vor 7 vor koralle vor alle.
+Karten ohne passendes Bild sehen aus wie bisher.
+Mehrere Bilder für dieselbe Karte:  7_1.jpg   7_2.jpg   7_3.jpg
+
+
+TÖNE  (mp3, ogg, wav, m4a)
+--------------------------
+Alle Töne im Ordner kommen in einen Topf: Bei jeder gelegten Karte wird einer davon
+zufällig abgespielt (bei allen Mitspielern derselbe). Dateinamen sind egal.
+Ein neuer Ton unterbricht den alten.
+
+Nur diese Namen haben eine Sonderbedeutung (alles optional):
+
+  dran.mp3        wenn du an der Reihe bist
+  gewonnen.mp3    wenn jemand die Runde gewinnt
+  ziehen.mp3      wenn jemand eine Karte zieht
+  strafe.mp3      wenn jemand +2/+4 ziehen muss
+  plus4.mp3, aussetzen.mp3, koralle-7.mp3 …   fester Ton für genau diese Karte(n)
+
+Varianten mit Unterstrich:  dran_1.mp3  dran_2.mp3
+
+Ohne eigene Töne spielt Böp! einfache eingebaute Töne. Im Spiel oben rechts: „Ton an/aus".

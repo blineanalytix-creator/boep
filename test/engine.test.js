@@ -26,10 +26,10 @@ assert.strictEqual(E.createDeck().length, 108);
 
 let games = 0, actions = 0, maxLen = 0, stacked = 0, unfinished = 0;
 for (let n = 2; n <= 4; n++) {
-  for (const stack of [true, false]) {
-    for (let g = 0; g < 1500; g++) {
+  for (const [stack, skipDraw] of [[true, false], [false, false], [true, true], [false, true]]) {
+    for (let g = 0; g < 750; g++) {
       const G = E.newGame('TEST');
-      G.settings.stack = stack;
+      G.settings.stack = stack; G.settings.skipDraw = skipDraw;
       for (let i = 0; i < n; i++) E.addPlayer(G, 'b' + i, 'Bot ' + i, true);
       E.startRound(G);
       assert(/^\d$/.test(G.discard[0].v), 'Startkarte keine Zahl');
@@ -55,8 +55,14 @@ for (let n = 2; n <= 4; n++) {
 
         if (G.pending > 2) stacked++;
         const a = E.botAction(G, i);
+        const seq = G.seq;
         const r = E.apply(G, i, a);
         assert(r.ok, 'Bot-Aktion abgelehnt: ' + JSON.stringify(a) + ' ' + r.err);
+        assert.strictEqual(G.seq, seq + 1, 'seq zaehlt jede Aktion');
+        if (a.t === 'play') assert(G.evs[0].t === 'play' && G.evs[0].card.id === a.id, 'play-Ereignis fehlt');
+        if (a.t === 'draw') assert(G.evs.length === 1 || G.evs.length === 0, 'draw-Ereignisse');
+        assert.strictEqual(E.apply(G, (G.turn + 1) % n === G.turn ? 99 : (G.turn + 1) % n, { t: 'pass' }).ok, false);
+        assert.strictEqual(G.seq, seq + 1, 'abgelehnte Aktion aendert seq nicht');
         checkInvariants(G);
         steps++;
       }
@@ -73,8 +79,8 @@ for (let n = 2; n <= 4; n++) {
 
 // Gezielte Regeltests
 (function rules() {
-  const mk = (stack, n) => {
-    const G = E.newGame('T'); G.settings.stack = stack;
+  const mk = (stack, n, skipDraw) => {
+    const G = E.newGame('T'); G.settings.stack = stack; G.settings.skipDraw = !!skipDraw;
     for (let i = 0; i < n; i++) E.addPlayer(G, 'b' + i, 'P' + i, true);
     E.startRound(G); G.turn = 0; G.dir = 1;
     return G;
@@ -93,12 +99,28 @@ for (let n = 2; n <= 4; n++) {
   };
   const isDraw = c => c.v === 'd2' || c.v === 'd4';
 
-  // +2 ohne Stapeln: Naechster zieht 2 und setzt aus
+  // +2 ohne Stapeln, Standard: Naechster zieht 2 und darf danach normal spielen
   let G = mk(false, 3); G.color = 'k';
   let c = give(G, 0, 'k', 'd2'); let before = G.players[1].hand.length;
+  assert(E.apply(G, 0, { t: 'play', id: c.id }).ok);
+  assert.strictEqual(G.players[1].hand.length, before + 2);
+  assert.strictEqual(G.turn, 1, 'nach Strafkarten selbst dran'); assert.strictEqual(G.pending, 0);
+  assert.deepStrictEqual(G.evs.map(e => e.t), ['play', 'penalty']);
+  assert.strictEqual(G.evs[1].by, 1); assert.strictEqual(G.evs[1].n, 2);
+  const playable = G.players[1].hand.find(x => E.canPlay(G, 1, x));
+  if (playable) assert(E.play(G, 1, playable.id, 'k').ok, 'nach dem Strafziehen legen');
+  else assert(E.draw(G, 1).ok, 'nach dem Strafziehen normal ziehen');
+
+  // +2 ohne Stapeln, mit "aussetzen": Naechster zieht 2 und wird uebersprungen
+  G = mk(false, 3, true); G.color = 'k';
+  c = give(G, 0, 'k', 'd2'); before = G.players[1].hand.length;
   assert(E.play(G, 0, c.id).ok);
   assert.strictEqual(G.players[1].hand.length, before + 2);
   assert.strictEqual(G.turn, 2); assert.strictEqual(G.pending, 0);
+
+  // zu zweit, Standard: Gegner zieht 2 und ist dann dran (nicht der Leger nochmal)
+  G = mk(false, 2); G.color = 'k';
+  c = give(G, 0, 'k', 'd2'); assert(E.play(G, 0, c.id).ok); assert.strictEqual(G.turn, 1);
 
   // Stapeln: +2 auf +2, dann muss der Dritte 4 ziehen
   G = mk(true, 3); G.color = 'k';
@@ -111,7 +133,7 @@ for (let n = 2; n <= 4; n++) {
   before = G.players[2].hand.length;
   assert(E.play(G, 1, c2.id).ok);
   assert.strictEqual(G.players[2].hand.length, before + 4);
-  assert.strictEqual(G.turn, 0); assert.strictEqual(G.pending, 0);
+  assert.strictEqual(G.turn, 2, 'Gestapeltes gezogen, danach selbst dran'); assert.strictEqual(G.pending, 0);
 
   // Stapeln: +2 auf +4 ist nicht erlaubt, freiwillig ziehen geht
   G = mk(true, 3); G.color = 'k';
@@ -123,7 +145,8 @@ for (let n = 2; n <= 4; n++) {
   before = G.players[1].hand.length;
   assert(E.draw(G, 1).ok);
   assert.strictEqual(G.players[1].hand.length, before + 4);
-  assert.strictEqual(G.turn, 2);
+  assert.strictEqual(G.turn, 1, 'freiwillig gezogen, danach selbst dran');
+  assert(E.play(G, 1, d2.id).ok, 'danach darf die Flieder +2 normal gelegt werden');
 
   // Aussetzen & Richtungswechsel
   G = mk(true, 4); G.color = 'k';
